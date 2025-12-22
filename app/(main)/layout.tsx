@@ -98,6 +98,22 @@ export default function MainLayout({
         },
       ],
     },
+    {
+      name: "Accounts",
+      icon: "manage_accounts",
+      children: [
+        {
+          name: "User",
+          href: "/accounts/user",
+          icon: "person",
+        },
+        {
+          name: "Role",
+          href: "/accounts/role",
+          icon: "admin_panel_settings",
+        },
+      ],
+    },
   ];
 
   if (isLoading) {

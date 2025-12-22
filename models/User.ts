@@ -6,6 +6,7 @@ export interface IUser extends Document {
   name?: string;
   password?: string;
   profilePic?: string;
+  role?: mongoose.Types.ObjectId | string; // Reference to Role
   usedResetTokens?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +37,11 @@ const UserSchema: Schema = new Schema(
       type: [String],
       default: [],
       select: false, // Don't include in queries by default
+    },
+    role: {
+      type: Schema.Types.ObjectId,
+      ref: "Role",
+      default: null,
     },
   },
   {

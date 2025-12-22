@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateToken } from "@/lib/jwt";
 import { sendRegistrationEmail } from "@/lib/email";
 import { findUserByEmail } from "@/lib/db";
+import connectDB from "@/lib/mongodb";
+import User from "@/models/User";
+import mongoose from "mongoose";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email } = body;
+    const { email, roleId } = body;
 
     if (!email) {
       return NextResponse.json(
@@ -26,11 +29,34 @@ export async function POST(request: NextRequest) {
 
     // Check if email already exists
     const existingUser = await findUserByEmail(email);
-    if (existingUser) {
+    if (existingUser && existingUser.password) {
       return NextResponse.json(
         { message: "Email already registered" },
         { status: 400 }
       );
+    }
+
+    // Validate roleId if provided
+    if (roleId && !mongoose.Types.ObjectId.isValid(roleId)) {
+      return NextResponse.json(
+        { message: "Invalid role ID" },
+        { status: 400 }
+      );
+    }
+
+    // Create or update user with role
+    await connectDB();
+    if (existingUser) {
+      // Update existing user (invited but not registered)
+      await User.findByIdAndUpdate(existingUser.id, {
+        role: roleId || null,
+      });
+    } else {
+      // Create new user without password (will be set during registration)
+      await User.create({
+        email: email.toLowerCase(),
+        role: roleId || null,
+      });
     }
 
     // Generate JWT token with expiry from env

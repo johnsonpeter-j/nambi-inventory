@@ -43,6 +43,7 @@ export async function createUser(data: {
   name?: string;
   password?: string;
   profilePic?: string;
+  role?: string;
 }): Promise<UserData> {
   try {
     await connectDB();
@@ -51,6 +52,7 @@ export async function createUser(data: {
       name: data.name,
       password: data.password,
       profilePic: data.profilePic,
+      role: data.role,
     });
     return convertUser(user)!;
   } catch (error: any) {
