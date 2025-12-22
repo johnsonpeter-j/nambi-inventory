@@ -15,20 +15,17 @@ const PartySchema: Schema = new Schema(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     mobileNo: {
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     emailId: {
       type: String,
       required: true,
       trim: true,
       lowercase: true,
-      index: true,
     },
     createdBy: {
       type: String,

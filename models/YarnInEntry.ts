@@ -19,7 +19,6 @@ const YarnInEntrySchema: Schema = new Schema(
     entryDate: {
       type: Date,
       required: true,
-      index: true,
     },
     name: {
       type: String,
@@ -29,13 +28,11 @@ const YarnInEntrySchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "YarnCategory",
       required: true,
-      index: true,
     },
     lotNo: {
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     purchaseDate: {
       type: Date,
@@ -45,7 +42,6 @@ const YarnInEntrySchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Party",
       required: true,
-      index: true,
     },
     noOfBoxes: {
       type: Number,

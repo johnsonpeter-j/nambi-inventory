@@ -15,19 +15,16 @@ const YarnExEntrySchema: Schema = new Schema(
     entryDate: {
       type: Date,
       required: true,
-      index: true,
     },
     categoryId: {
       type: Schema.Types.ObjectId,
       ref: "YarnCategory",
       required: true,
-      index: true,
     },
     lotNo: {
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     takingWeightInKg: {
       type: Number,
