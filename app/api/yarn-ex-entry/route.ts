@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import YarnExEntry from "@/models/YarnExEntry";
+import YarnCategory from "@/models/YarnCategory"; // Import for populate
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import { findUserByEmail } from "@/lib/db";
 import mongoose from "mongoose";
@@ -17,6 +18,10 @@ export async function GET(request: NextRequest) {
     }
 
     await connectDB();
+    
+    // Ensure models are registered for populate (access to trigger registration)
+    void YarnCategory;
+    
     const entries = await YarnExEntry.find()
       .populate("categoryId", "name")
       .sort({ entryDate: -1, createdAt: -1 })
@@ -116,6 +121,10 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
+    
+    // Ensure models are registered for populate (access to trigger registration)
+    void YarnCategory;
+    
     const entry = new YarnExEntry({
       entryDate: new Date(entryDate),
       categoryId: new mongoose.Types.ObjectId(categoryId),

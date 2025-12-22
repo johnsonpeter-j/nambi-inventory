@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import YarnInEntry from "@/models/YarnInEntry";
+import YarnCategory from "@/models/YarnCategory"; // Import for populate
+import Party from "@/models/Party"; // Import for populate
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import { findUserByEmail } from "@/lib/db";
 import mongoose from "mongoose";
@@ -17,6 +19,11 @@ export async function GET(request: NextRequest) {
     }
 
     await connectDB();
+    
+    // Ensure models are registered for populate (access to trigger registration)
+    void YarnCategory;
+    void Party;
+    
     const entries = await YarnInEntry.find()
       .populate("categoryId", "name")
       .populate("partyId", "name")
@@ -151,6 +158,11 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
+    
+    // Ensure models are registered for populate (access to trigger registration)
+    void YarnCategory;
+    void Party;
+    
     const entry = new YarnInEntry({
       entryDate: new Date(entryDate),
       categoryId: new mongoose.Types.ObjectId(categoryId),
@@ -198,5 +210,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
 

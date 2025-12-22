@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import YarnExEntry from "@/models/YarnExEntry";
+import YarnCategory from "@/models/YarnCategory"; // Import for populate
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import mongoose from "mongoose";
 
@@ -29,6 +30,10 @@ export async function GET(
     }
 
     await connectDB();
+    
+    // Ensure models are registered for populate (access to trigger registration)
+    void YarnCategory;
+    
     const entry = await YarnExEntry.findById(id)
       .populate("categoryId", "name")
       .lean();
@@ -93,6 +98,10 @@ export async function PUT(
     const { entryDate, categoryId, lotNo, takingWeightInKg } = body;
 
     await connectDB();
+    
+    // Ensure models are registered for populate (access to trigger registration)
+    void YarnCategory;
+    
     const entry = await YarnExEntry.findById(id);
 
     if (!entry) {
