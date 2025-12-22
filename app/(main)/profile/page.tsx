@@ -149,17 +149,10 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8 flex items-center justify-center">
+      <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="mb-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 text-slate-600 dark:text-[#92adc9] hover:text-slate-900 dark:hover:text-white transition-colors mb-4"
-          >
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
-            <span>Back to Dashboard</span>
-          </Link>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
             Profile Settings
           </h1>

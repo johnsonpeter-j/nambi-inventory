@@ -246,6 +246,14 @@ export default function MainLayout({
                 </p>
               </div>
             </Link>
+            <Link
+              href="/change-password"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#101922] transition-colors mb-3"
+            >
+              <span className="material-symbols-outlined text-xl">lock</span>
+              <span className="font-medium">Change Password</span>
+            </Link>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -350,6 +358,16 @@ export default function MainLayout({
                       person
                     </span>
                     <span className="font-medium">View Profile</span>
+                  </Link>
+                  <Link
+                    href="/change-password"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#101922] transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      lock
+                    </span>
+                    <span className="font-medium">Change Password</span>
                   </Link>
                   <button
                     onClick={() => {
