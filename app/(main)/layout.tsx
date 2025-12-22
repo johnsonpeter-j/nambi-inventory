@@ -219,8 +219,12 @@ export default function MainLayout({
 
           {/* User section */}
           <div className="p-4 border-t border-slate-200 dark:border-[#324d67]">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50 dark:bg-[#101922] mb-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <Link
+              href="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50 dark:bg-[#101922] mb-3 hover:bg-slate-100 dark:hover:bg-[#1a232e] transition-colors cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {user?.profilePic ? (
                   <img
                     src={user.profilePic}
@@ -241,7 +245,7 @@ export default function MainLayout({
                   {user?.email}
                 </p>
               </div>
-            </div>
+            </Link>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -303,7 +307,11 @@ export default function MainLayout({
             {profileMenuOpen && (
               <div className="absolute right-0 top-14 w-72 bg-white dark:bg-[#1a232e] rounded-xl shadow-xl border border-slate-200 dark:border-[#324d67] overflow-hidden z-50">
                 {/* Profile header */}
-                <div className="p-4 border-b border-slate-200 dark:border-[#324d67]">
+                <Link
+                  href="/profile"
+                  onClick={() => setProfileMenuOpen(false)}
+                  className="block p-4 border-b border-slate-200 dark:border-[#324d67] hover:bg-slate-50 dark:hover:bg-[#101922] transition-colors cursor-pointer"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {user?.profilePic ? (
@@ -329,10 +337,20 @@ export default function MainLayout({
                       </p>
                     </div>
                   </div>
-                </div>
+                </Link>
 
-                {/* Logout button */}
-                <div className="p-2">
+                {/* Menu items */}
+                <div className="p-2 space-y-1">
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#101922] transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-xl">
+                      person
+                    </span>
+                    <span className="font-medium">View Profile</span>
+                  </Link>
                   <button
                     onClick={() => {
                       setProfileMenuOpen(false);
