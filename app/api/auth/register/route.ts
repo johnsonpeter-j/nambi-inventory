@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
 import { findUserByEmail, createUser, updateUser } from "@/lib/db";
 import { generateToken } from "@/lib/jwt";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,31 +39,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Handle profile picture upload
+    // Handle profile picture upload to Cloudinary
     let profilePicUrl: string | undefined;
     if (profilePic && profilePic instanceof File) {
       try {
-        // Create uploads directory if it doesn't exist
-        const uploadsDir = join(process.cwd(), "public", "uploads");
-        if (!existsSync(uploadsDir)) {
-          await mkdir(uploadsDir, { recursive: true });
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (profilePic.size > maxSize) {
+          return NextResponse.json(
+            { message: "Profile picture must be less than 5MB" },
+            { status: 400 }
+          );
         }
 
-        // Generate unique filename to avoid conflicts
-        const timestamp = Date.now();
-        const fileExtension = profilePic.name.split(".").pop();
-        const uniqueFileName = `${email.replace(/[^a-zA-Z0-9]/g, "_")}_${timestamp}.${fileExtension}`;
-        const filePath = join(uploadsDir, uniqueFileName);
+        // Validate file type
+        const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(profilePic.type)) {
+          return NextResponse.json(
+            { message: "Profile picture must be a JPEG, PNG, or WebP image" },
+            { status: 400 }
+          );
+        }
 
-        // Convert File to Buffer and save
+        // Convert File to Buffer
         const bytes = await profilePic.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        await writeFile(filePath, buffer);
 
-        // Store the URL path (relative to public folder)
-        profilePicUrl = `/uploads/${uniqueFileName}`;
+        // Generate unique public ID for Cloudinary (will be stored as yarncheck/profile/image.png)
+        const timestamp = Date.now();
+        const publicId = `image_${email.replace(/[^a-zA-Z0-9]/g, "_")}_${timestamp}`;
+
+        // Upload to Cloudinary with custom path structure: yarncheck/profile/
+        profilePicUrl = await uploadToCloudinary(buffer, "yarncheck/profile", publicId);
       } catch (error: any) {
-        console.error("Error saving profile picture:", error);
+        console.error("Error uploading profile picture to Cloudinary:", error);
         // Continue without profile picture if upload fails
         profilePicUrl = undefined;
       }

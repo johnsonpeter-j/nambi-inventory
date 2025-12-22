@@ -91,6 +91,11 @@ A comprehensive yarn inventory management system built with Next.js, MongoDB, an
    
    # Frontend URL (for email links)
    FRONTEND_URL=http://localhost:3000
+   
+   # Cloudinary Configuration (for profile picture uploads)
+   CLOUDINARY_CLOUD_NAME=your-cloud-name
+   CLOUDINARY_API_KEY=your-api-key
+   CLOUDINARY_API_SECRET=your-api-secret
    ```
 
 3. **Start MongoDB:**
