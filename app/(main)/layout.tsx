@@ -98,11 +98,6 @@ export default function MainLayout({
         },
       ],
     },
-    {
-      name: "Settings",
-      href: "/settings",
-      icon: "settings",
-    },
   ];
 
   if (isLoading) {

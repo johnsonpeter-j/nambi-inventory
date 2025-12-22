@@ -51,4 +51,3 @@ const Party: Model<IParty> =
 
 export default Party;
 
-
