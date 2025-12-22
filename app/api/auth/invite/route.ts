@@ -48,14 +48,21 @@ export async function POST(request: NextRequest) {
     await connectDB();
     if (existingUser) {
       // Update existing user (invited but not registered)
-      await User.findByIdAndUpdate(existingUser.id, {
+      // Only update status to invited if user hasn't joined yet
+      const updateData: any = {
         role: roleId || null,
-      });
+      };
+      // Only set status to invited if user hasn't joined (doesn't have password)
+      if (!existingUser.password) {
+        updateData.status = "invited";
+      }
+      await User.findByIdAndUpdate(existingUser.id, updateData);
     } else {
       // Create new user without password (will be set during registration)
       await User.create({
         email: email.toLowerCase(),
         role: roleId || null,
+        status: "invited",
       });
     }
 

@@ -85,18 +85,18 @@ export default function UserList({
             </div>
           )}
 
-          {/* Invited On */}
+          {/* Status */}
           <div className="mb-4">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
-                calendar_today
+                {user.status === "joined" ? "check_circle" : "mail"}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 dark:text-[#92adc9]">
-                  Invited On
+                  Status
                 </p>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  {new Date(user.createdAt).toLocaleDateString()}
+                <p className="text-sm font-medium text-slate-900 dark:text-white capitalize">
+                  {user.status === "joined" ? "Joined" : "Invited"}
                 </p>
               </div>
             </div>
@@ -104,16 +104,20 @@ export default function UserList({
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-[#324d67]">
-            <button
-              onClick={() => onInviteAgain(user.email)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-primary dark:border-blue-400 hover:bg-primary/10 dark:hover:bg-primary/20 text-primary dark:text-blue-400 transition-colors font-medium"
-            >
-              <span className="material-symbols-outlined text-lg">mail</span>
-              <span>Invite Again</span>
-            </button>
+            {user.status !== "joined" && (
+              <button
+                onClick={() => onInviteAgain(user.email)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-primary dark:border-blue-400 hover:bg-primary/10 dark:hover:bg-primary/20 text-primary dark:text-blue-400 transition-colors font-medium"
+              >
+                <span className="material-symbols-outlined text-lg">mail</span>
+                <span>Invite Again</span>
+              </button>
+            )}
             <button
               onClick={() => onDelete(user.id)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 transition-colors font-medium"
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 transition-colors font-medium ${
+                user.status === "joined" ? "flex-1" : "flex-1"
+              }`}
             >
               <span className="material-symbols-outlined text-lg">delete</span>
               <span>Delete</span>

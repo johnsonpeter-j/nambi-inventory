@@ -35,6 +35,7 @@ export default function RegisterForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
   const [showInvalidModal, setShowInvalidModal] = useState(false);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
   useEffect(() => {
     const checkToken = async () => {
@@ -45,13 +46,47 @@ export default function RegisterForm() {
       }
 
       const result = await validateTokenForAuth(token);
-      if (validateToken.fulfilled.match(result) && result.payload?.valid) {
+      
+      // Get payload from either fulfilled or rejected action
+      let payload: any = null;
+      let message = "";
+      
+      if (validateToken.fulfilled.match(result)) {
+        payload = result.payload;
+        message = payload?.message || "";
+      } else if (validateToken.rejected.match(result)) {
+        payload = result.payload as any;
+        message = payload?.message || "";
+      }
+      
+      // Check if token is valid
+      if (payload?.valid === true) {
+        // Token is valid and user can register
         setIsTokenValid(true);
-        setEmail(result.payload.email || "");
+        setEmail(payload.email || "");
         setShowInvalidModal(false);
+        setIsAlreadyRegistered(false);
       } else {
-        setIsTokenValid(false);
-        setShowInvalidModal(true);
+        // Token validation failed - check if user is already registered
+        const lowerMessage = message.toLowerCase();
+        const isAlreadyRegisteredMessage = 
+          lowerMessage.includes("already registered") || 
+          lowerMessage.includes("sign in instead") ||
+          lowerMessage.includes("sign in");
+        
+        if (isAlreadyRegisteredMessage) {
+          setIsAlreadyRegistered(true);
+          setIsTokenValid(false);
+          toast.info("You are already registered. Redirecting to sign in...");
+          // Redirect to signin after 2 seconds
+          setTimeout(() => {
+            router.push("/signin");
+          }, 2000);
+        } else {
+          setIsTokenValid(false);
+          setShowInvalidModal(true);
+          setIsAlreadyRegistered(false);
+        }
       }
     };
 
@@ -208,10 +243,35 @@ export default function RegisterForm() {
     }
   };
 
-  if (isTokenValid === null) {
+  if (isTokenValid === null && !isAlreadyRegistered) {
     return (
       <div className="w-full max-w-[440px] flex flex-col gap-6 items-center justify-center">
         <div className="text-slate-500 dark:text-[#92adc9]">Validating token...</div>
+      </div>
+    );
+  }
+
+  if (isAlreadyRegistered) {
+    return (
+      <div className="w-full max-w-[440px] flex flex-col gap-6 items-center justify-center">
+        <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 mb-4 mx-auto">
+            <span className="material-symbols-outlined text-4xl">info</span>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+            Already Registered
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-[#92adc9] mb-6">
+            You are already registered. Redirecting to sign in page...
+          </p>
+          <Link
+            href="/signin"
+            className="inline-flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors"
+          >
+            <span>Go to Sign In</span>
+            <span className="material-symbols-outlined text-lg">arrow_forward</span>
+          </Link>
+        </div>
       </div>
     );
   }

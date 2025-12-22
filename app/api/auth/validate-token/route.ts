@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
-import { isResetTokenUsed } from "@/lib/db";
+import { isResetTokenUsed, findUserByEmail } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +31,20 @@ export async function POST(request: NextRequest) {
           {
             valid: false,
             message: "This password reset link has already been used",
+          },
+          { status: 200 }
+        );
+      }
+    }
+
+    // For register tokens, check if user is already registered
+    if (decoded.type === "register") {
+      const existingUser = await findUserByEmail(decoded.email);
+      if (existingUser && existingUser.status === "joined") {
+        return NextResponse.json(
+          {
+            valid: false,
+            message: "User is already registered. Please sign in instead.",
           },
           { status: 200 }
         );

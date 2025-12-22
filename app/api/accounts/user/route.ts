@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
           email: user.email,
           name: user.name,
           profilePic: user.profilePic,
+          status: user.status || "invited", // Default to "invited" for backward compatibility
           role: user.role
             ? {
                 id: typeof user.role === "object" ? user.role._id.toString() : user.role,

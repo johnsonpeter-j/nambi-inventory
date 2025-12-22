@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
         password,
         name,
         profilePic: profilePicUrl,
+        status: "joined",
       });
     } else {
       // Create new user
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
         password,
         name,
         profilePic: profilePicUrl,
+        status: "joined",
       });
     }
 

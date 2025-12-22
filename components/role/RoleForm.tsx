@@ -218,6 +218,8 @@ export default function RoleForm({
 
   if (!show) return null;
 
+  const isAdminRole = editingRole?.name === "Admin";
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-xl border border-slate-200 dark:border-[#324d67] w-full max-w-2xl my-8 max-h-[90vh] flex flex-col">
@@ -235,6 +237,14 @@ export default function RoleForm({
               <span className="material-symbols-outlined text-2xl">close</span>
             </button>
           </div>
+          {isAdminRole && (
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <p className="text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                <span className="material-symbols-outlined text-lg">info</span>
+                This is a protected system role and cannot be edited.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Scrollable Content */}
@@ -250,7 +260,10 @@ export default function RoleForm({
                 type="text"
                 value={formData.name}
                 onChange={handleNameChange}
-                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={isAdminRole}
+                className={`w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary ${
+                  isAdminRole ? "opacity-60 cursor-not-allowed" : ""
+                }`}
                 placeholder="Enter role name"
               />
               <div className="min-h-[20px]">
@@ -277,13 +290,14 @@ export default function RoleForm({
                     </h3>
                   </div>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                       <input
                         type="checkbox"
                         checked={formData.permissions.dashboard?.view || false}
                         onChange={(e) =>
                           handlePermissionChange(["dashboard", "view"], e.target.checked)
                         }
+                        disabled={isAdminRole}
                         className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                       />
                       <span className="text-sm text-slate-700 dark:text-[#92adc9]">
@@ -301,13 +315,14 @@ export default function RoleForm({
                     </h3>
                   </div>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                       <input
                         type="checkbox"
                         checked={formData.permissions.inEntry?.create || false}
                         onChange={(e) =>
                           handlePermissionChange(["inEntry", "create"], e.target.checked)
                         }
+                        disabled={isAdminRole}
                         className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                       />
                       <span className="text-sm text-slate-700 dark:text-[#92adc9]">
@@ -325,13 +340,14 @@ export default function RoleForm({
                     </h3>
                   </div>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                       <input
                         type="checkbox"
                         checked={formData.permissions.outEntry?.create || false}
                         onChange={(e) =>
                           handlePermissionChange(["outEntry", "create"], e.target.checked)
                         }
+                        disabled={isAdminRole}
                         className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                       />
                       <span className="text-sm text-slate-700 dark:text-[#92adc9]">
@@ -367,7 +383,7 @@ export default function RoleForm({
                           <h4 className="font-medium text-slate-900 dark:text-white text-sm">
                             Category
                           </h4>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <span className="text-xs text-slate-600 dark:text-[#92adc9]">
                               Select All
                             </span>
@@ -380,12 +396,13 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                           </label>
                         </div>
                         <div className="p-3 space-y-2">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -397,13 +414,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               View
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -415,13 +433,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Create
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -433,13 +452,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Edit
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -451,6 +471,7 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
@@ -466,7 +487,7 @@ export default function RoleForm({
                           <h4 className="font-medium text-slate-900 dark:text-white text-sm">
                             Party
                           </h4>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <span className="text-xs text-slate-600 dark:text-[#92adc9]">
                               Select All
                             </span>
@@ -479,12 +500,13 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                           </label>
                         </div>
                         <div className="p-3 space-y-2">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -496,13 +518,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               View
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -514,13 +537,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Create
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -532,13 +556,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Edit
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -550,6 +575,7 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
@@ -588,7 +614,7 @@ export default function RoleForm({
                           <h4 className="font-medium text-slate-900 dark:text-white text-sm">
                             User
                           </h4>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <span className="text-xs text-slate-600 dark:text-[#92adc9]">
                               Select All
                             </span>
@@ -601,12 +627,13 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                           </label>
                         </div>
                         <div className="p-3 space-y-2">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -618,13 +645,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               View
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -636,13 +664,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Create
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -654,13 +683,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Edit
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -672,6 +702,7 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
@@ -687,7 +718,7 @@ export default function RoleForm({
                           <h4 className="font-medium text-slate-900 dark:text-white text-sm">
                             Role
                           </h4>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <span className="text-xs text-slate-600 dark:text-[#92adc9]">
                               Select All
                             </span>
@@ -700,12 +731,13 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                           </label>
                         </div>
                         <div className="p-3 space-y-2">
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -717,13 +749,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               View
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -735,13 +768,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Create
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -753,13 +787,14 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
                               Edit
                             </span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
+                          <label className={`flex items-center gap-2 ${isAdminRole ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -771,6 +806,7 @@ export default function RoleForm({
                                   e.target.checked
                                 )
                               }
+                              disabled={isAdminRole}
                               className="w-4 h-4 rounded border-slate-300 dark:border-[#324d67] text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-slate-700 dark:text-[#92adc9]">
@@ -796,7 +832,7 @@ export default function RoleForm({
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || isAdminRole}
                 className="flex-1 px-4 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting

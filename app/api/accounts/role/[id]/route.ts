@@ -104,6 +104,14 @@ export async function PUT(
       );
     }
 
+    // Prevent editing Admin role
+    if (role.name === "Admin") {
+      return NextResponse.json(
+        { message: "Admin role cannot be edited" },
+        { status: 403 }
+      );
+    }
+
     // Update fields
     if (name !== undefined) {
       if (!name || !name.trim()) {
@@ -183,7 +191,7 @@ export async function DELETE(
     }
 
     await connectDB();
-    const role = await Role.findByIdAndDelete(id);
+    const role = await Role.findById(id);
 
     if (!role) {
       return NextResponse.json(
@@ -191,6 +199,16 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    // Prevent deleting Admin role
+    if (role.name === "Admin") {
+      return NextResponse.json(
+        { message: "Admin role cannot be deleted" },
+        { status: 403 }
+      );
+    }
+
+    await Role.findByIdAndDelete(id);
 
     return NextResponse.json(
       { message: "Role deleted successfully" },

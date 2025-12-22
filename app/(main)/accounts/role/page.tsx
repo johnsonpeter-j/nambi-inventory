@@ -78,6 +78,10 @@ export default function RolePage() {
 
   // Handle edit
   const handleEdit = (role: Role) => {
+    if (role.name === "Admin") {
+      toast.error("Admin role cannot be edited");
+      return;
+    }
     setEditingRole(role);
     setShowForm(true);
   };
@@ -85,6 +89,12 @@ export default function RolePage() {
   // Handle delete
   const handleDelete = async (id: string) => {
     try {
+      const role = roles.find((r) => r.id === id);
+      if (role?.name === "Admin") {
+        toast.error("Admin role cannot be deleted");
+        setDeleteConfirm(null);
+        return;
+      }
       await axiosInstance.delete(`/accounts/role/${id}`);
       toast.success("Role deleted successfully");
       setDeleteConfirm(null);

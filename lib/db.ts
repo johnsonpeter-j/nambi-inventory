@@ -9,6 +9,7 @@ export interface UserData {
   name?: string;
   password?: string;
   profilePic?: string;
+  status?: "invited" | "joined";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +23,7 @@ function convertUser(user: IUser | null): UserData | null {
     name: user.name,
     password: user.password,
     profilePic: user.profilePic,
+    status: user.status as "invited" | "joined" | undefined,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -44,6 +46,7 @@ export async function createUser(data: {
   password?: string;
   profilePic?: string;
   role?: string;
+  status?: "invited" | "joined";
 }): Promise<UserData> {
   try {
     await connectDB();
@@ -53,6 +56,7 @@ export async function createUser(data: {
       password: data.password,
       profilePic: data.profilePic,
       role: data.role,
+      status: data.status,
     });
     return convertUser(user)!;
   } catch (error: any) {
@@ -88,6 +92,9 @@ export async function updateUser(
     }
     if (data.profilePic !== undefined) {
       user.profilePic = data.profilePic;
+    }
+    if (data.status !== undefined) {
+      user.status = data.status as "invited" | "joined";
     }
 
     // Save the user (this will trigger the pre-save hook for password hashing)

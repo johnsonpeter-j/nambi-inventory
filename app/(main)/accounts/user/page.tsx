@@ -12,6 +12,7 @@ export interface User {
   email: string;
   name?: string;
   profilePic?: string;
+  status?: "invited" | "joined";
   role?: {
     id: string;
     name: string;

@@ -66,20 +66,30 @@ export default function RoleCard({
           <span className="material-symbols-outlined text-lg">visibility</span>
           <span>View</span>
         </button>
-        <button
-          onClick={() => onEdit(role)}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-primary dark:border-blue-400 hover:bg-primary/10 dark:hover:bg-primary/20 text-primary dark:text-blue-400 transition-colors font-medium"
-        >
-          <span className="material-symbols-outlined text-lg">edit</span>
-          <span>Edit</span>
-        </button>
-        <button
-          onClick={() => onDelete(role.id)}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 transition-colors font-medium"
-        >
-          <span className="material-symbols-outlined text-lg">delete</span>
-          <span>Delete</span>
-        </button>
+        {role.name !== "Admin" && (
+          <>
+            <button
+              onClick={() => onEdit(role)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-primary dark:border-blue-400 hover:bg-primary/10 dark:hover:bg-primary/20 text-primary dark:text-blue-400 transition-colors font-medium"
+            >
+              <span className="material-symbols-outlined text-lg">edit</span>
+              <span>Edit</span>
+            </button>
+            <button
+              onClick={() => onDelete(role.id)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 transition-colors font-medium"
+            >
+              <span className="material-symbols-outlined text-lg">delete</span>
+              <span>Delete</span>
+            </button>
+          </>
+        )}
+        {role.name === "Admin" && (
+          <div className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-500 dark:text-[#64748b] cursor-not-allowed font-medium">
+            <span className="material-symbols-outlined text-lg">lock</span>
+            <span>Protected</span>
+          </div>
+        )}
       </div>
     </div>
   );
