@@ -1,10 +1,14 @@
-import SignInForm from "@/components/login/SignInForm";
+import RegisterForm from "@/components/register/RegisterForm";
 
-export default function SignInPage() {
+export default function RegisterPage() {
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center font-display p-4 text-slate-900 dark:text-white antialiased selection:bg-primary/30">
-      <SignInForm />
+      <RegisterForm />
     </div>
   );
 }
+
+
+
+
 

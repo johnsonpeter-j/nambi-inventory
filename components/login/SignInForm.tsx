@@ -1,6 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
+import { loginUser } from "@/store/slices/authSlice";
 
 interface FormErrors {
   email?: string;
@@ -8,10 +13,19 @@ interface FormErrors {
 }
 
 export default function SignInForm() {
+  const router = useRouter();
+  const { login, isLoading, isAuthenticated } = useAuth();
+  const toast = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
 
   const validateEmail = (email: string): string | undefined => {
     if (!email.trim()) {
@@ -34,7 +48,7 @@ export default function SignInForm() {
     return undefined;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const newErrors: FormErrors = {};
@@ -56,8 +70,14 @@ export default function SignInForm() {
     // Clear errors if validation passes
     setErrors({});
     
-    // Handle form submission here
-    console.log("Form submitted", { email, password });
+    // Handle form submission
+    const result = await login(email, password);
+    if (loginUser.fulfilled.match(result)) {
+      toast.success("Login successful!");
+      router.push("/dashboard");
+    } else {
+      toast.error(result.payload as string || "Login failed");
+    }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,20 +187,21 @@ export default function SignInForm() {
 
           {/* Forgot Password Link */}
           <div className="flex justify-end pb-4">
-            <a
+            <Link
               className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
               href="/forgot-password"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {/* Submit Button */}
           <button
-            className="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 bg-primary hover:bg-blue-600 text-white text-base font-bold leading-normal tracking-wide transition-all shadow-md shadow-primary/20"
+            className="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 px-5 bg-primary hover:bg-blue-600 text-white text-base font-bold leading-normal tracking-wide transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
             type="submit"
+            disabled={isLoading}
           >
-            Sign in
+            {isLoading ? "Signing in..." : "Sign in"}
           </button>
         </form>
       </div>

@@ -1,9 +1,9 @@
-import SignInForm from "@/components/login/SignInForm";
+import ResetPasswordForm from "@/components/reset-password/ResetPasswordForm";
 
-export default function SignInPage() {
+export default function ResetPasswordPage() {
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center font-display p-4 text-slate-900 dark:text-white antialiased selection:bg-primary/30">
-      <SignInForm />
+      <ResetPasswordForm />
     </div>
   );
 }

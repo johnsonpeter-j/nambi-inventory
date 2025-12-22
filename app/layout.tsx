@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+import { ToastContainer } from "react-toastify";
+import ReduxProvider from "@/store/provider";
+import StartupCheck from "@/components/common/StartupCheck";
+import AuthCheck from "@/components/common/AuthCheck";
 import "./globals.css";
+import "react-toastify/dist/ReactToastify.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Inventory OS Login",
-  description: "Enter your credentials to access the dashboard",
+  title: "Inventory",
+  description: "Inventory Management app",
 };
 
 export default function RootLayout({
@@ -34,7 +39,23 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ReduxProvider>
+          <StartupCheck />
+          <AuthCheck />
+          {children}
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
+        </ReduxProvider>
       </body>
     </html>
   );

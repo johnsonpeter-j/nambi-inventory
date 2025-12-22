@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nambi Inventory
 
-## Getting Started
+Inventory management system built with Next.js, MongoDB, and Redux.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 🔐 Authentication (Sign in, Register, Forgot Password, Reset Password)
+- 📧 Email invitations with beautiful HTML templates
+- 🗄️ MongoDB database with Mongoose
+- 🎨 Modern UI with Tailwind CSS
+- 📱 Fully responsive design
+- 🔔 Toast notifications
+- 🔄 Redux state management
+
+## Prerequisites
+
+- Node.js 18+ 
+- MongoDB (local or MongoDB Atlas)
+- SMTP email account (Gmail, SendGrid, etc.)
+
+## Quick Start
+
+1. **Clone and install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Set up environment variables:**
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   
+   Edit `.env.local` with your configuration:
+   ```env
+   MONGODB_URI=mongodb://localhost:27017/inventory
+   DEFAULT_USER_EMAIL=admin@example.com
+   JWT_SECRET=your-secret-key
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
+   ```
+
+3. **Start MongoDB:**
+   ```bash
+   # If using local MongoDB
+   mongod
+   ```
+
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open [http://localhost:3000](http://localhost:3000)**
+
+## Environment Variables
+
+See `SETUP.md` for complete environment variable documentation.
+
+## Project Structure
+
+```
+├── app/
+│   ├── (auth)/          # Authentication pages
+│   ├── api/             # API routes
+│   └── layout.tsx       # Root layout
+├── components/
+│   ├── common/          # Shared components
+│   ├── login/           # Login components
+│   ├── register/        # Registration components
+│   └── ...
+├── lib/
+│   ├── db.ts            # Database utilities
+│   ├── mongodb.ts       # MongoDB connection
+│   ├── jwt.ts           # JWT utilities
+│   └── email.ts         # Email utilities
+├── models/
+│   └── User.ts          # User Mongoose model
+├── store/
+│   ├── slices/          # Redux slices
+│   └── store.ts         # Redux store
+└── hooks/
+    ├── useAuth.ts       # Auth hook
+    └── useToast.ts      # Toast hook
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Authentication Flow
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Startup**: App checks if `DEFAULT_USER_EMAIL` exists in DB
+2. **If not**: Automatically sends registration invitation email
+3. **User clicks link**: Goes to `/register?token={jwt_token}`
+4. **User completes registration**: Account created
+5. **User can sign in**: Using email and password
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Endpoints
 
-## Learn More
+- `POST /api/auth/login` - User login
+- `POST /api/auth/invite` - Send registration invitation
+- `POST /api/auth/register` - Complete registration with token
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password with token
+- `POST /api/auth/validate-token` - Validate JWT token
+- `GET /api/auth/check-default-user` - Check default user (startup)
 
-To learn more about Next.js, take a look at the following resources:
+## Database
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The project uses MongoDB with Mongoose. The User model includes:
+- Email (unique, indexed)
+- Name
+- Password (hashed with bcrypt)
+- Profile picture URL
+- Timestamps
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Development
 
-## Deploy on Vercel
+```bash
+# Development server
+npm run dev
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Build for production
+npm run build
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Start production server
+npm start
+
+# Lint
+npm run lint
+```
+
+## Documentation
+
+- [Setup Guide](./SETUP.md) - Detailed setup instructions
+- [Store Documentation](./store/README.md) - Redux store usage
+- [Toast Hook Documentation](./hooks/README.md) - Toast notifications
+
+## License
+
+MIT
