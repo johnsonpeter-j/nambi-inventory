@@ -7,6 +7,8 @@ export interface IUser extends Document {
   password?: string;
   profilePic?: string;
   usedResetTokens?: string[];
+  role?: string; // Reference to Role _id
+  status?: "invited" | "joined";
   createdAt: Date;
   updatedAt: Date;
   comparePassword?(candidatePassword: string): Promise<boolean>;
@@ -36,6 +38,14 @@ const UserSchema: Schema = new Schema(
       type: [String],
       default: [],
       select: false, // Don't include in queries by default
+    },
+    role: {
+      type: String,
+      ref: "Role",
+    },
+    status: {
+      type: String,
+      enum: ["invited", "joined"],
     },
   },
   {

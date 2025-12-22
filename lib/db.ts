@@ -9,6 +9,7 @@ export interface UserData {
   name?: string;
   password?: string;
   profilePic?: string;
+  role?: string;
   status?: "invited" | "joined";
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +24,7 @@ function convertUser(user: IUser | null): UserData | null {
     name: user.name,
     password: user.password,
     profilePic: user.profilePic,
+    role: user.role,
     status: user.status as "invited" | "joined" | undefined,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -92,6 +94,9 @@ export async function updateUser(
     }
     if (data.profilePic !== undefined) {
       user.profilePic = data.profilePic;
+    }
+    if (data.role !== undefined) {
+      user.role = data.role;
     }
     if (data.status !== undefined) {
       user.status = data.status as "invited" | "joined";
