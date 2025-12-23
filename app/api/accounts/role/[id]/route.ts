@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Role from "@/models/Role";
+import User from "@/models/User";
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import mongoose from "mongoose";
 
@@ -205,6 +206,22 @@ export async function DELETE(
       return NextResponse.json(
         { message: "Admin role cannot be deleted" },
         { status: 403 }
+      );
+    }
+
+    // Check if any active users are using this role
+    const usersWithRole = await User.find({
+      role: id,
+      isDeleted: { $ne: true },
+    }).lean();
+
+    if (usersWithRole.length > 0) {
+      const userCount = usersWithRole.length;
+      return NextResponse.json(
+        {
+          message: `Cannot delete role. This role is currently assigned to ${userCount} active user${userCount > 1 ? "s" : ""}. Please reassign or remove the role from users before deleting.`,
+        },
+        { status: 400 }
       );
     }
 

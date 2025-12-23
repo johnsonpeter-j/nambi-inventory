@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       "30d"
     );
 
-    // Return user data (without password)
+    // Return user data (without password) - role details already included from verifyUserPassword
     const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json(

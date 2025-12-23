@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     
     let users;
     try {
+      // Fetch all users including deleted ones
       users = await User.find()
         .populate({
           path: "role",
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest) {
                 name: typeof user.role === "object" ? user.role.name : null,
               }
             : null,
+          isDeleted: user.isDeleted || false,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         })),

@@ -2,11 +2,22 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axiosInstance from "@/lib/axios";
 
 // Types
+interface RoleData {
+  id: string;
+  name: string;
+  permissions: any;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface User {
   id: string;
   email: string;
   name: string;
   profilePic?: string;
+  role?: string;
+  roleDetails?: RoleData;
 }
 
 interface AuthState {

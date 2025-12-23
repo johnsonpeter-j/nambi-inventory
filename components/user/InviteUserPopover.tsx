@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import CustomSelect from "@/components/common/CustomSelect";
 
 interface InviteUserPopoverProps {
   roles: { id: string; name: string }[];
@@ -25,7 +26,7 @@ export default function InviteUserPopover({
   });
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -58,8 +59,12 @@ export default function InviteUserPopover({
       }
     }
 
+    if (!formData.roleId.trim()) {
+      errors.roleId = "Role is required";
+    }
+
     setFormErrors(errors);
-    return !errors.email;
+    return !errors.email && !errors.roleId;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,7 +102,7 @@ export default function InviteUserPopover({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
@@ -121,30 +126,21 @@ export default function InviteUserPopover({
           </div>
 
           {/* Role */}
-          <div>
+          <div className="mt-4">
             <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-              Role
+              Role <span className="text-red-500">*</span>
             </label>
-            <select
+            <CustomSelect
               name="roleId"
               value={formData.roleId}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Select a role</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-            <div className="min-h-[20px]">
-              {formErrors.roleId && (
-                <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                  {formErrors.roleId}
-                </p>
-              )}
-            </div>
+              options={roles.map((role) => ({
+                value: role.id,
+                label: role.name,
+              }))}
+              placeholder="Select a role"
+              error={formErrors.roleId}
+            />
           </div>
 
           {/* Form Actions */}

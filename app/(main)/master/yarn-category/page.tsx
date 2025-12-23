@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import axiosInstance from "@/lib/axios";
 import { useToast } from "@/hooks/useToast";
+import AccessControl from "@/components/common/AccessControl";
 import YarnCategoryForm, {
   YarnCategory,
 } from "@/components/yarn-category/YarnCategoryForm";
@@ -106,8 +107,9 @@ export default function YarnCategoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+    <AccessControl>
+      <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -151,7 +153,8 @@ export default function YarnCategoryPage() {
           onEdit={handleEdit}
           onDelete={(id) => setDeleteConfirm(id)}
         />
+        </div>
       </div>
-    </div>
+    </AccessControl>
   );
 }

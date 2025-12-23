@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { canAccessNavigationItem } from "@/lib/permissions";
 
 export default function MainLayout({
   children,
@@ -66,7 +67,7 @@ export default function MainLayout({
 
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
-  const navigationItems = [
+  const allNavigationItems = [
     {
       name: "Dashboard",
       href: "/dashboard",
@@ -115,6 +116,28 @@ export default function MainLayout({
       ],
     },
   ];
+
+  // Filter navigation items based on user permissions
+  const navigationItems = useMemo(() => {
+    const permissions = user?.roleDetails?.permissions;
+    return allNavigationItems
+      .map((item) => {
+        // If item has children, filter them first
+        if (item.children) {
+          const filteredChildren = item.children.filter((child) =>
+            canAccessNavigationItem(permissions, { href: child.href })
+          );
+          // Only include parent if it has accessible children
+          if (filteredChildren.length > 0) {
+            return { ...item, children: filteredChildren };
+          }
+          return null;
+        }
+        // For items without children, check direct permission
+        return canAccessNavigationItem(permissions, item) ? item : null;
+      })
+      .filter((item) => item !== null);
+  }, [user?.roleDetails?.permissions]);
 
   if (isLoading) {
     return (

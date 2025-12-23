@@ -5,6 +5,7 @@ import axiosInstance from "@/lib/axios";
 import { useToast } from "@/hooks/useToast";
 import UserList from "@/components/user/UserList";
 import InviteUserPopover from "@/components/user/InviteUserPopover";
+import EditUserModal from "@/components/user/EditUserModal";
 import DeleteConfirmModal from "@/components/yarn-category/DeleteConfirmModal";
 
 export interface User {
@@ -17,6 +18,7 @@ export interface User {
     id: string;
     name: string;
   } | null;
+  isDeleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,6 +29,7 @@ export default function UserPage() {
   const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInvitePopover, setShowInvitePopover] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const inviteButtonRef = useRef<HTMLButtonElement>(null);
@@ -101,6 +104,31 @@ export default function UserPage() {
     }
   };
 
+  // Handle edit user role
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+  };
+
+  // Handle update user role
+  const handleUpdateRole = async (userId: string, roleId: string) => {
+    try {
+      setSubmitting(true);
+      await axiosInstance.put(`/accounts/user/${userId}`, {
+        roleId: roleId || null,
+      });
+      toast.success("User role updated successfully");
+      setEditingUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to update user role"
+      );
+      throw error;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Handle delete
   const handleDelete = async (id: string) => {
     try {
@@ -112,6 +140,22 @@ export default function UserPage() {
       toast.error(
         error.response?.data?.message || "Failed to delete user"
       );
+    }
+  };
+
+  // Handle recover user
+  const handleRecover = async (id: string) => {
+    try {
+      setSubmitting(true);
+      await axiosInstance.patch(`/accounts/user/${id}`);
+      toast.success("User recovered successfully");
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to recover user"
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -172,6 +216,16 @@ export default function UserPage() {
           </div>
         </div>
 
+        {/* Edit User Modal */}
+        <EditUserModal
+          show={!!editingUser}
+          user={editingUser}
+          roles={roles}
+          onSubmit={handleUpdateRole}
+          onCancel={() => setEditingUser(null)}
+          submitting={submitting}
+        />
+
         {/* Delete Confirmation Modal */}
         <DeleteConfirmModal
           show={!!deleteConfirm}
@@ -185,7 +239,9 @@ export default function UserPage() {
           users={users}
           loading={loading}
           onInviteAgain={handleInviteAgain}
+          onEdit={handleEdit}
           onDelete={(id) => setDeleteConfirm(id)}
+          onRecover={handleRecover}
         />
       </div>
     </div>

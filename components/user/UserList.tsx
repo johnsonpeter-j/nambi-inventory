@@ -6,14 +6,18 @@ interface UserListProps {
   users: User[];
   loading: boolean;
   onInviteAgain: (email: string) => void;
+  onEdit: (user: User) => void;
   onDelete: (id: string) => void;
+  onRecover: (id: string) => void;
 }
 
 export default function UserList({
   users,
   loading,
   onInviteAgain,
+  onEdit,
   onDelete,
+  onRecover,
 }: UserListProps) {
   if (loading) {
     return (
@@ -44,8 +48,21 @@ export default function UserList({
       {users.map((user) => (
         <div
           key={user.id}
-          className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-6 hover:shadow-xl transition-shadow"
+          className={`bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border p-6 hover:shadow-xl transition-shadow ${
+            user.isDeleted
+              ? "border-orange-300 dark:border-orange-700 opacity-75"
+              : "border-slate-200 dark:border-[#324d67]"
+          }`}
         >
+          {/* Deleted Badge */}
+          {user.isDeleted && (
+            <div className="mb-4 px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg">
+              <p className="text-xs font-medium text-orange-700 dark:text-orange-300 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">delete</span>
+                Deleted User
+              </p>
+            </div>
+          )}
           {/* User Info */}
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -72,18 +89,21 @@ export default function UserList({
           </div>
 
           {/* Role */}
-          {user.role && (
-            <div className="mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
-                  admin_panel_settings
-                </span>
-                <span className="text-sm text-slate-700 dark:text-[#92adc9]">
-                  {user.role.name}
-                </span>
+          <div className="mb-4">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                admin_panel_settings
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                  Role
+                </p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                  {user.role?.name || "No Role"}
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Status */}
           <div className="mb-4">
@@ -102,26 +122,73 @@ export default function UserList({
             </div>
           </div>
 
+          {/* Date */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                {user.status === "joined" ? "event" : "schedule"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                  {user.status === "joined" ? "Joined on" : "Invited on"}
+                </p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                  {user.status === "joined" && user.updatedAt
+                    ? new Date(user.updatedAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : user.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "N/A"}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-[#324d67]">
-            {user.status !== "joined" && (
+            {user.isDeleted ? (
+              // Recover button for deleted users
               <button
-                onClick={() => onInviteAgain(user.email)}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-primary dark:border-blue-400 hover:bg-primary/10 dark:hover:bg-primary/20 text-primary dark:text-blue-400 transition-colors font-medium"
+                onClick={() => onRecover(user.id)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-green-600 dark:border-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 text-green-600 dark:text-green-400 transition-colors font-medium"
               >
-                <span className="material-symbols-outlined text-lg">mail</span>
-                <span>Invite Again</span>
+                <span className="material-symbols-outlined text-lg">restore</span>
+                <span className="hidden lg:inline">Recover</span>
               </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => onEdit(user)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] hover:bg-slate-100 dark:hover:bg-[#101922] text-slate-700 dark:text-white transition-colors font-medium"
+                >
+                  <span className="material-symbols-outlined text-lg">edit</span>
+                  <span className="hidden lg:inline">Edit</span>
+                </button>
+                {user.status !== "joined" && (
+                  <button
+                    onClick={() => onInviteAgain(user.email)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-primary dark:border-blue-400 hover:bg-primary/10 dark:hover:bg-primary/20 text-primary dark:text-blue-400 transition-colors font-medium"
+                  >
+                    <span className="material-symbols-outlined text-lg">mail</span>
+                    <span className="hidden lg:inline">Invite</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => onDelete(user.id)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 transition-colors font-medium"
+                >
+                  <span className="material-symbols-outlined text-lg">delete</span>
+                  <span className="hidden lg:inline">Delete</span>
+                </button>
+              </>
             )}
-            <button
-              onClick={() => onDelete(user.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 transition-colors font-medium ${
-                user.status === "joined" ? "flex-1" : "flex-1"
-              }`}
-            >
-              <span className="material-symbols-outlined text-lg">delete</span>
-              <span>Delete</span>
-            </button>
           </div>
         </div>
       ))}

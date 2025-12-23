@@ -1,7 +1,17 @@
 // Database utility file using MongoDB with Mongoose
 import connectDB from "./mongodb";
 import User, { IUser } from "@/models/User";
+import Role, { IRole } from "@/models/Role";
 import crypto from "crypto";
+
+export interface RoleData {
+  id: string;
+  name: string;
+  permissions: any;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface UserData {
   id: string;
@@ -10,6 +20,7 @@ export interface UserData {
   password?: string;
   profilePic?: string;
   role?: string;
+  roleDetails?: RoleData;
   status?: "invited" | "joined";
   createdAt: Date;
   updatedAt: Date;
@@ -34,10 +45,47 @@ function convertUser(user: IUser | null): UserData | null {
 export async function findUserByEmail(email: string): Promise<UserData | null> {
   try {
     await connectDB();
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ 
+      email: email.toLowerCase(),
+      isDeleted: { $ne: true }
+    });
     return convertUser(user);
   } catch (error) {
     console.error("Error finding user by email:", error);
+    throw error;
+  }
+}
+
+export async function findUserByEmailWithRole(email: string): Promise<UserData | null> {
+  try {
+    await connectDB();
+    const user = await User.findOne({ 
+      email: email.toLowerCase(),
+      isDeleted: { $ne: true }
+    });
+    if (!user) return null;
+    
+    const userData = convertUser(user);
+    if (!userData || !userData.role) {
+      return userData;
+    }
+    
+    // Fetch role details
+    const role = await Role.findById(userData.role).lean();
+    if (role) {
+      userData.roleDetails = {
+        id: role._id.toString(),
+        name: role.name,
+        permissions: role.permissions,
+        createdBy: role.createdBy,
+        createdAt: role.createdAt,
+        updatedAt: role.updatedAt,
+      };
+    }
+    
+    return userData;
+  } catch (error) {
+    console.error("Error finding user by email with role:", error);
     throw error;
   }
 }
@@ -195,9 +243,10 @@ export async function verifyUserPassword(
 ): Promise<UserData | null> {
   try {
     await connectDB();
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
-      "+password"
-    );
+    const user = await User.findOne({ 
+      email: email.toLowerCase(),
+      isDeleted: { $ne: true }
+    }).select("+password");
 
     if (!user || !user.password) {
       return null;
@@ -214,7 +263,24 @@ export async function verifyUserPassword(
 
     // Remove password from response
     user.password = undefined;
-    return convertUser(user);
+    const userData = convertUser(user);
+    
+    // Fetch role details if role exists
+    if (userData && userData.role) {
+      const role = await Role.findById(userData.role).lean();
+      if (role) {
+        userData.roleDetails = {
+          id: role._id.toString(),
+          name: role.name,
+          permissions: role.permissions,
+          createdBy: role.createdBy,
+          createdAt: role.createdAt,
+          updatedAt: role.updatedAt,
+        };
+      }
+    }
+    
+    return userData;
   } catch (error) {
     console.error("Error verifying user password:", error);
     throw error;

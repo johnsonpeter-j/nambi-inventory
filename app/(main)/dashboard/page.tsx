@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/lib/axios";
 import { useToast } from "@/hooks/useToast";
+import AccessControl from "@/components/common/AccessControl";
 
 interface YarnInEntry {
   id: string;
@@ -168,13 +169,15 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
-            <p className="text-slate-500 dark:text-[#92adc9]">Loading...</p>
+      <AccessControl>
+        <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
+              <p className="text-slate-500 dark:text-[#92adc9]">Loading...</p>
+            </div>
           </div>
         </div>
-      </div>
+      </AccessControl>
     );
   }
 
@@ -182,8 +185,33 @@ export default function DashboardPage() {
 
   if (categoryArray.length === 0) {
     return (
+      <AccessControl>
+        <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                Dashboard
+              </h1>
+              <p className="text-slate-500 dark:text-[#92adc9]">
+                View inventory by category and lot number
+              </p>
+            </div>
+            <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
+              <p className="text-slate-500 dark:text-[#92adc9]">
+                No data available
+              </p>
+            </div>
+          </div>
+        </div>
+      </AccessControl>
+    );
+  }
+
+  return (
+    <AccessControl>
       <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
+          {/* Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
               Dashboard
@@ -192,32 +220,10 @@ export default function DashboardPage() {
               View inventory by category and lot number
             </p>
           </div>
-          <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
-            <p className="text-slate-500 dark:text-[#92adc9]">
-              No data available
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            Dashboard
-          </h1>
-          <p className="text-slate-500 dark:text-[#92adc9]">
-            View inventory by category and lot number
-          </p>
-        </div>
-
-        {/* Category Accordions */}
-        <div className="space-y-4">
-          {categoryArray.map((category) => {
+          {/* Category Accordions */}
+          <div className="space-y-4">
+            {categoryArray.map((category) => {
             const isExpanded = expandedCategories.has(category.categoryId);
             const lotsArray = Array.from(category.lots.values()).sort((a, b) =>
               a.lotNo.localeCompare(b.lotNo)
@@ -303,9 +309,10 @@ export default function DashboardPage() {
                 )}
               </div>
             );
-          })}
+            })}
+          </div>
         </div>
       </div>
-    </div>
+    </AccessControl>
   );
 }

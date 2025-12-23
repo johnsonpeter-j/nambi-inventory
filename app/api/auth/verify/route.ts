@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
-import { findUserByEmail } from "@/lib/db";
+import { findUserByEmailWithRole } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if user exists in database
-    const user = await findUserByEmail(decoded.email);
+    // Check if user exists in database and fetch with role details
+    const user = await findUserByEmailWithRole(decoded.email);
     if (!user) {
       return NextResponse.json(
         { valid: false, message: "User not found" },

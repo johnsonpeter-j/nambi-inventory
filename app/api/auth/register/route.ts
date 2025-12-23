@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
-import { findUserByEmail, createUser, updateUser } from "@/lib/db";
+import { findUserByEmail, createUser, findUserByEmailWithRole } from "@/lib/db";
 import { generateToken } from "@/lib/jwt";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import connectDB from "@/lib/mongodb";
+import User from "@/models/User";
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,14 +32,21 @@ export async function POST(request: NextRequest) {
 
     const email = decoded.email;
 
-    // Check if user already exists
-    const existingUser = await findUserByEmail(email);
-    if (existingUser && existingUser.password) {
+    // Check if user already exists (including deleted users for restoration)
+    await connectDB();
+    const existingUserRaw = await User.findOne({ email: email.toLowerCase() });
+    
+    // If user exists and is not deleted and has password, they're already registered
+    if (existingUserRaw && existingUserRaw.password && !existingUserRaw.isDeleted) {
       return NextResponse.json(
         { message: "User already registered" },
         { status: 400 }
       );
     }
+    
+    const existingUser = existingUserRaw && !existingUserRaw.isDeleted 
+      ? await findUserByEmail(email) 
+      : null;
 
     // Handle profile picture upload to Cloudinary
     let profilePicUrl: string | undefined;
@@ -80,14 +89,17 @@ export async function POST(request: NextRequest) {
 
     // Create or update user
     let user;
-    if (existingUser) {
-      // Update existing user (in case they were invited but didn't complete registration)
-      user = await updateUser(email, {
+    if (existingUserRaw) {
+      // Update existing user (in case they were invited but didn't complete registration, or restore deleted user)
+      const updateData: any = {
         password,
         name,
         profilePic: profilePicUrl,
         status: "joined",
-      });
+        isDeleted: false, // Restore if deleted
+      };
+      await User.findByIdAndUpdate(existingUserRaw._id, updateData);
+      user = await findUserByEmailWithRole(email);
     } else {
       // Create new user
       user = await createUser({
@@ -99,14 +111,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Ensure user was created/updated successfully
+    if (!user) {
+      return NextResponse.json(
+        { message: "Failed to create or update user" },
+        { status: 500 }
+      );
+    }
+
     // Generate JWT token for login
     const authToken = generateToken(
       { email: user.email, type: "auth" },
       "30d"
     );
 
+    // Fetch user with role details
+    const userWithRole = await findUserByEmailWithRole(user.email);
+    
     // Return user data (without password)
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = userWithRole || user;
 
     return NextResponse.json(
       {

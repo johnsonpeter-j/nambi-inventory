@@ -18,6 +18,15 @@ type User = {
   email: string;
   name: string;
   profilePic?: string;
+  role?: string;
+  roleDetails?: {
+    id: string;
+    name: string;
+    permissions: any;
+    createdBy: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
 };
 
 export const useAuth = () => {
