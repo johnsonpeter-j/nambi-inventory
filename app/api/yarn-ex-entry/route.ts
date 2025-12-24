@@ -21,8 +21,30 @@ export async function GET(request: NextRequest) {
     
     // Ensure models are registered for populate (access to trigger registration)
     void YarnCategory;
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const categoryId = searchParams.get("categoryId");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+
+    // Build query filter
+    const queryFilter: any = {};
+
+    // Filter by category
+    if (categoryId && categoryId !== "all") {
+      queryFilter.categoryId = new mongoose.Types.ObjectId(categoryId);
+    }
+
+    // Filter by date range
+    if (startDate && endDate) {
+      queryFilter.entryDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
     
-    const entries = await YarnExEntry.find()
+    const entries = await YarnExEntry.find(queryFilter)
       .populate("categoryId", "name")
       .sort({ entryDate: -1, createdAt: -1 })
       .lean();
@@ -41,20 +63,39 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get search parameter
+    const search = searchParams.get("search");
+
+    // Map entries to response format
+    let mappedEntries = entries.map((entry) => ({
+      id: entry._id.toString(),
+      entryDate: entry.entryDate,
+      categoryId: entry.categoryId._id.toString(),
+      categoryName: (entry.categoryId as any).name,
+      lotNo: entry.lotNo,
+      takingWeightInKg: entry.takingWeightInKg,
+      createdBy: entry.createdBy,
+      createdByName: userMap.get(entry.createdBy) || entry.createdBy,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+    }));
+
+    // Apply search filter if provided
+    if (search && search.trim()) {
+      const searchLower = search.trim().toLowerCase();
+      mappedEntries = mappedEntries.filter((entry) => {
+        const lotNo = (entry.lotNo || "").toLowerCase();
+        const categoryName = (entry.categoryName || "").toLowerCase();
+        return (
+          lotNo.includes(searchLower) ||
+          categoryName.includes(searchLower)
+        );
+      });
+    }
+
     return NextResponse.json(
       {
-        data: entries.map((entry) => ({
-          id: entry._id.toString(),
-          entryDate: entry.entryDate,
-          categoryId: entry.categoryId._id.toString(),
-          categoryName: (entry.categoryId as any).name,
-          lotNo: entry.lotNo,
-          takingWeightInKg: entry.takingWeightInKg,
-          createdBy: entry.createdBy,
-          createdByName: userMap.get(entry.createdBy) || entry.createdBy,
-          createdAt: entry.createdAt,
-          updatedAt: entry.updatedAt,
-        })),
+        data: mappedEntries,
       },
       { status: 200 }
     );

@@ -1,253 +1,92 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import axiosInstance from "@/lib/axios";
 import { useToast } from "@/hooks/useToast";
 import CustomSelect from "@/components/common/CustomSelect";
-import CustomDatePicker from "@/components/common/CustomDatePicker";
+
+interface YarnExEntry {
+  id: string;
+  entryDate: string;
+  categoryId: string;
+  categoryName: string;
+  lotNo: string;
+  takingWeightInKg: number;
+  createdBy: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface YarnCategory {
   id: string;
   name: string;
 }
 
-interface AvailableLot {
-  lotNo: string;
-  availableBoxes: number;
-  availableWeightInKg: number;
-}
-
 export default function YarnOutPage() {
+  const router = useRouter();
   const toast = useToast();
-  const [categories, setCategories] = useState<YarnCategory[]>([]);
-  const [availableLots, setAvailableLots] = useState<AvailableLot[]>([]);
+  const [entries, setEntries] = useState<YarnExEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingLots, setLoadingLots] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    entryDate: new Date().toISOString().split("T")[0],
-    categoryId: "",
-    lotNo: "",
-    availableNoOfBoxes: "",
-    availableWeightInKg: "",
-    takingWeightInKg: "",
-  });
-  const [formErrors, setFormErrors] = useState({
-    categoryId: "",
-    lotNo: "",
-    takingWeightInKg: "",
-  });
+  const [yarnCategories, setYarnCategories] = useState<YarnCategory[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+
+  // Debounce search query - wait 3 seconds after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        setLoading(true);
         const response = await axiosInstance.get("/yarn-category");
-        setCategories(response.data.data);
+        setYarnCategories(response.data.data);
       } catch (error: any) {
-        toast.error(
-          error.response?.data?.message || "Failed to fetch categories"
-        );
-      } finally {
-        setLoading(false);
+        console.error("Failed to fetch categories:", error);
       }
     };
     fetchCategories();
   }, []);
 
-  // Fetch available lots when category changes
-  useEffect(() => {
-    const fetchAvailableLots = async () => {
-      if (!formData.categoryId) {
-        setAvailableLots([]);
-        setFormData((prev) => ({
-          ...prev,
-          lotNo: "",
-          availableNoOfBoxes: "",
-          availableWeightInKg: "",
-        }));
-        return;
-      }
-
-      try {
-        setLoadingLots(true);
-        const response = await axiosInstance.get(
-          `/yarn-in-entry/available-lots?categoryId=${formData.categoryId}`
-        );
-        setAvailableLots(response.data.data);
-        
-        // Reset lotNo if current selection is not in new list
-        if (formData.lotNo) {
-          const lotExists = response.data.data.some(
-            (lot: AvailableLot) => lot.lotNo === formData.lotNo
-          );
-          if (!lotExists) {
-            setFormData((prev) => ({
-              ...prev,
-              lotNo: "",
-              availableNoOfBoxes: "",
-              availableWeightInKg: "",
-            }));
-          }
-        }
-      } catch (error: any) {
-        toast.error(
-          error.response?.data?.message || "Failed to fetch available lots"
-        );
-        setAvailableLots([]);
-      } finally {
-        setLoadingLots(false);
-      }
-    };
-
-    fetchAvailableLots();
-  }, [formData.categoryId]);
-
-  // Update available quantities when lotNo changes
-  useEffect(() => {
-    if (formData.lotNo) {
-      const selectedLot = availableLots.find(
-        (lot) => lot.lotNo === formData.lotNo
-      );
-      if (selectedLot) {
-        setFormData((prev) => ({
-          ...prev,
-          availableNoOfBoxes: selectedLot.availableBoxes.toString(),
-          availableWeightInKg: selectedLot.availableWeightInKg.toFixed(3),
-        }));
-      }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        availableNoOfBoxes: "",
-        availableWeightInKg: "",
-      }));
-    }
-  }, [formData.lotNo, availableLots]);
-
-  // Handle form input change
-  const handleInputChange = (
-    e:
-      | React.ChangeEvent<HTMLInputElement>
-      | { target: { name: string; value: string } }
-  ) => {
-    const { name, value } = e.target;
-
-    if (name === "takingWeightInKg") {
-      // Allow only numbers and decimal point, max 3 decimal places
-      const numericValue = value.replace(/[^0-9.]/g, "");
-      const parts = numericValue.split(".");
-      if (parts.length > 2) return; // Only one decimal point
-      if (parts[1] && parts[1].length > 3) return; // Max 3 decimal places
-      setFormData((prev) => ({
-        ...prev,
-        [name]: numericValue,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-
-    // Clear error when user starts typing
-    if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const errors = {
-      categoryId: "",
-      lotNo: "",
-      takingWeightInKg: "",
-    };
-
-    if (!formData.categoryId) {
-      errors.categoryId = "Category is required";
-    }
-
-    if (!formData.lotNo) {
-      errors.lotNo = "Lot number is required";
-    }
-
-    if (!formData.takingWeightInKg || Number(formData.takingWeightInKg) <= 0) {
-      errors.takingWeightInKg = "Taking weight in kg must be greater than 0";
-    } else {
-      // Check decimal places (max 3)
-      const weightStr = formData.takingWeightInKg;
-      const decimalPart = weightStr.includes(".") ? weightStr.split(".")[1] : "";
-      if (decimalPart.length > 3) {
-        errors.takingWeightInKg =
-          "Taking weight in kg must have at most 3 decimal places";
-      }
-
-      // Check if taking weight exceeds available weight
-      const availableWeight = parseFloat(formData.availableWeightInKg || "0");
-      const takingWeight = parseFloat(formData.takingWeightInKg);
-      if (takingWeight > availableWeight) {
-        errors.takingWeightInKg =
-          `Taking weight cannot exceed available weight (${availableWeight.toFixed(3)} kg)`;
-      }
-    }
-
-    setFormErrors(errors);
-    return !errors.categoryId && !errors.lotNo && !errors.takingWeightInKg;
-  };
-
-  // Handle form submit
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+  // Fetch entries
+  const fetchEntries = async (categoryId?: string, search?: string) => {
     try {
-      setSubmitting(true);
-
-      await axiosInstance.post("/yarn-ex-entry", {
-        entryDate: formData.entryDate,
-        categoryId: formData.categoryId,
-        lotNo: formData.lotNo.trim(),
-        takingWeightInKg: Number(formData.takingWeightInKg),
-      });
-
-      toast.success("Yarn ex entry created successfully");
-
-      // Reset form
-      setFormData({
-        entryDate: new Date().toISOString().split("T")[0],
-        categoryId: "",
-        lotNo: "",
-        availableNoOfBoxes: "",
-        availableWeightInKg: "",
-        takingWeightInKg: "",
-      });
-      setFormErrors({
-        categoryId: "",
-        lotNo: "",
-        takingWeightInKg: "",
-      });
-      setAvailableLots([]);
+      setLoading(true);
+      const params: any = {};
+      if (categoryId && categoryId !== "all") {
+        params.categoryId = categoryId;
+      }
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      const response = await axiosInstance.get("/yarn-ex-entry", { params });
+      setEntries(response.data.data);
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Failed to create yarn ex entry"
+        error.response?.data?.message || "Failed to fetch yarn out entries"
       );
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchEntries(categoryFilter, debouncedSearchQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFilter, debouncedSearchQuery]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center p-4 md:p-8">
-        <div className="max-w-7xl w-full">
+      <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
           <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
             <p className="text-slate-500 dark:text-[#92adc9]">Loading...</p>
           </div>
@@ -257,190 +96,167 @@ export default function YarnOutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center p-4 md:p-8">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            Yarn Out Entry
-          </h1>
-          <p className="text-slate-500 dark:text-[#92adc9]">
-            Add new yarn out entry
-          </p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Yarn Out
+            </h1>
+            <p className="text-slate-500 dark:text-[#92adc9]">
+              View and manage yarn out entries
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/yarn-out/add")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors shadow-md shadow-primary/20"
+          >
+            <span className="material-symbols-outlined">add</span>
+            <span>Add Entry</span>
+          </button>
         </div>
 
-        {/* Form */}
-        <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Entry Date */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Entry Date <span className="text-red-500">*</span>
-                </label>
-                <CustomDatePicker
-                  name="entryDate"
-                  value={formData.entryDate}
-                  onChange={() => {}} // No-op since it's disabled
-                  disabled={true}
-                />
-                <p className="text-xs text-slate-500 dark:text-[#92adc9] mt-1">
-                  Today's date (not editable)
-                </p>
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <CustomSelect
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setFormData((prev) => ({
-                      ...prev,
-                      [name]: value,
-                      lotNo: "", // Reset lotNo when category changes
-                      availableNoOfBoxes: "",
-                      availableWeightInKg: "",
-                    }));
-                    if (formErrors[name as keyof typeof formErrors]) {
-                      setFormErrors((prev) => ({
-                        ...prev,
-                        [name]: "",
-                      }));
-                    }
-                  }}
-                  options={categories.map((cat) => ({
+        {/* Filter Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="w-full sm:w-auto sm:max-w-[200px]">
+              <CustomSelect
+                name="categoryFilter"
+                value={categoryFilter}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setCategoryFilter(value);
+                }}
+                options={[
+                  { value: "all", label: "All Categories" },
+                  ...yarnCategories.map((cat) => ({
                     value: cat.id,
                     label: cat.name,
-                  }))}
-                  placeholder="Select Category"
-                  error={formErrors.categoryId}
-                />
-              </div>
+                  })),
+                ]}
+                placeholder="Filter by category"
+              />
+            </div>
+          </div>
+          <div className="w-full sm:w-auto sm:max-w-lg">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by lot no or category..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-500 dark:placeholder:text-[#92adc9]"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-[#92adc9] pointer-events-none">
+                <span className="material-symbols-outlined text-xl">search</span>
+              </span>
+            </div>
+          </div>
+        </div>
 
-              {/* Lot No */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Lot No <span className="text-red-500">*</span>
-                </label>
-                <CustomSelect
-                  name="lotNo"
-                  value={formData.lotNo}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setFormData((prev) => ({
-                      ...prev,
-                      [name]: value,
-                    }));
-                    if (formErrors[name as keyof typeof formErrors]) {
-                      setFormErrors((prev) => ({
-                        ...prev,
-                        [name]: "",
-                      }));
-                    }
-                  }}
-                  options={availableLots.map((lot) => ({
-                    value: lot.lotNo,
-                    label: `${lot.lotNo} (${lot.availableBoxes} boxes, ${lot.availableWeightInKg.toFixed(3)} kg)`,
-                  }))}
-                  placeholder={
-                    loadingLots
-                      ? "Loading lots..."
-                      : !formData.categoryId
-                      ? "Select category first"
-                      : availableLots.length === 0
-                      ? "No available lots"
-                      : "Select Lot No"
-                  }
-                  error={formErrors.lotNo}
-                  disabled={!formData.categoryId || loadingLots}
-                />
-              </div>
+        {/* Entries List */}
+        {entries.length === 0 ? (
+          <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
+            <span className="material-symbols-outlined text-6xl text-slate-400 dark:text-[#64748b] mb-4">
+              output
+            </span>
+            <p className="text-slate-500 dark:text-[#92adc9] text-lg mb-2">
+              No entries found
+            </p>
+            <p className="text-slate-400 dark:text-[#64748b] text-sm">
+              Click "Add Entry" to create your first yarn out entry
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {entries.map((entry) => (
+              <div
+                key={entry.id}
+                className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-6 hover:shadow-xl transition-shadow"
+              >
+                {/* Category */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      category
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Category
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {entry.categoryName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Available Number of Boxes */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Available No. of Boxes
-                </label>
-                <input
-                  type="text"
-                  value={formData.availableNoOfBoxes}
-                  disabled
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-100 dark:bg-[#0f172a] text-slate-500 dark:text-[#64748b] cursor-not-allowed"
-                  placeholder="0"
-                />
-              </div>
+                {/* Lot No */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      tag
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Lot No
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {entry.lotNo}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Available Weight in Kg */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Available Weight in Kg
-                </label>
-                <input
-                  type="text"
-                  value={formData.availableWeightInKg}
-                  disabled
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-100 dark:bg-[#0f172a] text-slate-500 dark:text-[#64748b] cursor-not-allowed"
-                  placeholder="0.000"
-                />
-              </div>
+                {/* Entry Date */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      event
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Entry Date
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {new Date(entry.entryDate).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Taking Weight in Kg */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Taking Weight in Kg <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="takingWeightInKg"
-                  value={formData.takingWeightInKg}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="0.000"
-                />
-                <div className="min-h-[20px]">
-                  {formErrors.takingWeightInKg && (
-                    <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                      {formErrors.takingWeightInKg}
-                    </p>
-                  )}
-                  {!formErrors.takingWeightInKg && (
-                    <p className="text-xs text-slate-500 dark:text-[#92adc9] mt-1">
-                      Maximum 3 decimal places
-                    </p>
-                  )}
+                {/* Taking Weight */}
+                <div className="mb-4 pt-4 border-t border-slate-200 dark:border-[#324d67]">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      scale
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Taking Weight (kg)
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {entry.takingWeightInKg.toFixed(3)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Created By */}
+                <div className="pt-4 border-t border-slate-200 dark:border-[#324d67]">
+                  <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                    Created by {entry.createdByName || entry.createdBy}
+                  </p>
                 </div>
               </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end pt-4">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <span className="material-symbols-outlined animate-spin">
-                      refresh
-                    </span>
-                    <span>Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined">add</span>
-                    <span>Generate Program</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

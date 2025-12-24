@@ -16,7 +16,24 @@ export async function GET(request: NextRequest) {
     }
 
     await connectDB();
-    const categories = await YarnCategory.find()
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+
+    // Build query filter
+    const queryFilter: any = {};
+
+    // Build search filter
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      queryFilter.$or = [
+        { name: searchRegex },
+        { description: searchRegex },
+      ];
+    }
+
+    const categories = await YarnCategory.find(queryFilter)
       .sort({ createdAt: -1 })
       .lean();
 

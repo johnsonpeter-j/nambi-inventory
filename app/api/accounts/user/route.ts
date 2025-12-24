@@ -22,11 +22,54 @@ export async function GET(request: NextRequest) {
     if (!mongoose.models.Role) {
       await import("@/models/Role");
     }
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+    const roleId = searchParams.get("roleId");
+    const search = searchParams.get("search");
+
+    // Build query filter
+    const queryFilter: any = {};
+
+    // Filter by status (active/inactive based on isDeleted)
+    if (status === "active") {
+      queryFilter.isDeleted = false;
+    } else if (status === "inactive") {
+      queryFilter.isDeleted = true;
+    }
+    // If status is "all" or not provided, don't filter by isDeleted
+
+    // Filter by role
+    if (roleId && roleId !== "all") {
+      queryFilter.role = roleId;
+    }
+
+    // Build search filter
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      const searchConditions: any[] = [
+        { name: searchRegex },
+        { email: searchRegex },
+      ];
+
+      // Also search by role name - find matching roles first
+      const matchingRoles = await Role.find({
+        name: searchRegex,
+      }).select("_id").lean();
+
+      if (matchingRoles.length > 0) {
+        const roleIds = matchingRoles.map((r: any) => r._id);
+        searchConditions.push({ role: { $in: roleIds } });
+      }
+
+      queryFilter.$or = searchConditions;
+    }
     
     let users;
     try {
-      // Fetch all users including deleted ones
-      users = await User.find()
+      // Fetch users with filters
+      users = await User.find(queryFilter)
         .populate({
           path: "role",
           select: "name",
@@ -37,7 +80,7 @@ export async function GET(request: NextRequest) {
     } catch (populateError: any) {
       // Fallback: fetch users without populate and manually fetch roles
       console.warn("Populate failed, using fallback:", populateError.message);
-      users = await User.find().sort({ createdAt: -1 }).lean();
+      users = await User.find(queryFilter).sort({ createdAt: -1 }).lean();
       
       // Manually fetch roles for users that have role IDs
       const roleIds = users
@@ -54,6 +97,21 @@ export async function GET(request: NextRequest) {
           }
           return u;
         });
+
+        // If search is provided, also filter by role name in memory
+        if (search && search.trim()) {
+          const searchLower = search.trim().toLowerCase();
+          users = users.filter((u: any) => {
+            const name = (u.name || "").toLowerCase();
+            const email = (u.email || "").toLowerCase();
+            const roleName = (u.role?.name || "").toLowerCase();
+            return (
+              name.includes(searchLower) ||
+              email.includes(searchLower) ||
+              roleName.includes(searchLower)
+            );
+          });
+        }
       }
     }
 

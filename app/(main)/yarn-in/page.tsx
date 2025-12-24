@@ -1,21 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import axiosInstance from "@/lib/axios";
 import { useToast } from "@/hooks/useToast";
 import CustomSelect from "@/components/common/CustomSelect";
-import CustomDatePicker from "@/components/common/CustomDatePicker";
-
-interface YarnCategory {
-  id: string;
-  name: string;
-  weightPerBox: number;
-}
-
-interface Party {
-  id: string;
-  name: string;
-}
 
 interface YarnInEntry {
   id: string;
@@ -34,234 +23,75 @@ interface YarnInEntry {
   updatedAt: string;
 }
 
-export default function YarnInPage() {
-  const toast = useToast();
-  const [categories, setCategories] = useState<YarnCategory[]>([]);
-  const [parties, setParties] = useState<Party[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [weightManuallyChanged, setWeightManuallyChanged] = useState(false);
-  const [formData, setFormData] = useState({
-    entryDate: new Date().toISOString().split("T")[0],
-    categoryId: "",
-    lotNo: "",
-    purchaseDate: new Date().toISOString().split("T")[0],
-    partyId: "",
-    noOfBoxes: "",
-    weightInKg: "",
-  });
-  const [formErrors, setFormErrors] = useState({
-    categoryId: "",
-    lotNo: "",
-    partyId: "",
-    noOfBoxes: "",
-    weightInKg: "",
-  });
+interface YarnCategory {
+  id: string;
+  name: string;
+}
 
-  // Fetch categories and parties
+export default function YarnInPage() {
+  const router = useRouter();
+  const toast = useToast();
+  const [entries, setEntries] = useState<YarnInEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [yarnCategories, setYarnCategories] = useState<YarnCategory[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+
+  // Debounce search query - wait 3 seconds after user stops typing
   useEffect(() => {
-    const fetchData = async () => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
       try {
-        setLoading(true);
-        const [categoriesRes, partiesRes] = await Promise.all([
-          axiosInstance.get("/yarn-category"),
-          axiosInstance.get("/party"),
-        ]);
-        setCategories(categoriesRes.data.data);
-        setParties(partiesRes.data.data);
+        const response = await axiosInstance.get("/yarn-category");
+        setYarnCategories(response.data.data);
       } catch (error: any) {
-        toast.error(
-          error.response?.data?.message || "Failed to fetch data"
-        );
-      } finally {
-        setLoading(false);
+        console.error("Failed to fetch categories:", error);
       }
     };
-    fetchData();
+    fetchCategories();
   }, []);
 
-  // Auto-calculate weight when boxes change (if weight wasn't manually changed)
-  useEffect(() => {
-    if (
-      !weightManuallyChanged &&
-      formData.categoryId &&
-      formData.noOfBoxes &&
-      Number(formData.noOfBoxes) > 0
-    ) {
-      const selectedCategory = categories.find(
-        (cat) => cat.id === formData.categoryId
-      );
-      if (selectedCategory && selectedCategory.weightPerBox) {
-        const calculatedWeight =
-          selectedCategory.weightPerBox * Number(formData.noOfBoxes);
-        setFormData((prev) => ({
-          ...prev,
-          weightInKg: calculatedWeight.toFixed(3),
-        }));
-      }
-    }
-  }, [formData.noOfBoxes, formData.categoryId, categories, weightManuallyChanged]);
-
-  // Reset weight manual change flag when category changes
-  useEffect(() => {
-    setWeightManuallyChanged(false);
-    // Auto-calculate if boxes are already entered
-    if (
-      formData.categoryId &&
-      formData.noOfBoxes &&
-      Number(formData.noOfBoxes) > 0 &&
-      categories.length > 0
-    ) {
-      const selectedCategory = categories.find(
-        (cat) => cat.id === formData.categoryId
-      );
-      if (selectedCategory && selectedCategory.weightPerBox) {
-        const calculatedWeight =
-          selectedCategory.weightPerBox * Number(formData.noOfBoxes);
-        setFormData((prev) => ({
-          ...prev,
-          weightInKg: calculatedWeight.toFixed(3),
-        }));
-      }
-    }
-  }, [formData.categoryId, formData.noOfBoxes, categories]);
-
-  // Handle form input change
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string } }
-  ) => {
-    const { name, value } = e.target;
-
-    if (name === "weightInKg") {
-      // Mark weight as manually changed
-      setWeightManuallyChanged(true);
-      // Allow only numbers and decimal point, max 3 decimal places
-      const numericValue = value.replace(/[^0-9.]/g, "");
-      const parts = numericValue.split(".");
-      if (parts.length > 2) return; // Only one decimal point
-      if (parts[1] && parts[1].length > 3) return; // Max 3 decimal places
-      setFormData((prev) => ({
-        ...prev,
-        [name]: numericValue,
-      }));
-    } else if (name === "noOfBoxes") {
-      // Allow only numbers
-      const numericValue = value.replace(/[^0-9]/g, "");
-      setFormData((prev) => ({
-        ...prev,
-        [name]: numericValue,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-
-    // Clear error when user starts typing
-    if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const errors = {
-      categoryId: "",
-      lotNo: "",
-      partyId: "",
-      noOfBoxes: "",
-      weightInKg: "",
-    };
-
-    if (!formData.categoryId) {
-      errors.categoryId = "Category is required";
-    }
-
-    if (!formData.lotNo.trim()) {
-      errors.lotNo = "Lot number is required";
-    }
-
-    if (!formData.partyId) {
-      errors.partyId = "Party is required";
-    }
-
-    if (!formData.noOfBoxes || Number(formData.noOfBoxes) <= 0) {
-      errors.noOfBoxes = "Number of boxes must be greater than 0";
-    }
-
-    if (!formData.weightInKg || Number(formData.weightInKg) <= 0) {
-      errors.weightInKg = "Weight in kg must be greater than 0";
-    } else {
-      // Check decimal places (max 3)
-      const weightStr = formData.weightInKg;
-      const decimalPart = weightStr.includes(".") ? weightStr.split(".")[1] : "";
-      if (decimalPart.length > 3) {
-        errors.weightInKg = "Weight in kg must have at most 3 decimal places";
-      }
-    }
-
-    setFormErrors(errors);
-    return !errors.categoryId && !errors.lotNo && !errors.partyId && !errors.noOfBoxes && !errors.weightInKg;
-  };
-
-  // Handle form submit
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+  // Fetch entries
+  const fetchEntries = async (categoryId?: string, search?: string) => {
     try {
-      setSubmitting(true);
-
-      await axiosInstance.post("/yarn-in-entry", {
-        entryDate: formData.entryDate,
-        categoryId: formData.categoryId,
-        lotNo: formData.lotNo.trim(),
-        purchaseDate: formData.purchaseDate,
-        partyId: formData.partyId,
-        noOfBoxes: Number(formData.noOfBoxes),
-        weightInKg: Number(formData.weightInKg),
-      });
-
-      toast.success("Yarn in entry created successfully");
-
-      // Reset form
-      setFormData({
-        entryDate: new Date().toISOString().split("T")[0],
-        categoryId: "",
-        lotNo: "",
-        purchaseDate: new Date().toISOString().split("T")[0],
-        partyId: "",
-        noOfBoxes: "",
-        weightInKg: "",
-      });
-      setFormErrors({
-        categoryId: "",
-        lotNo: "",
-        partyId: "",
-        noOfBoxes: "",
-        weightInKg: "",
-      });
-      setWeightManuallyChanged(false);
+      setLoading(true);
+      const params: any = {};
+      if (categoryId && categoryId !== "all") {
+        params.categoryId = categoryId;
+      }
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      const response = await axiosInstance.get("/yarn-in-entry", { params });
+      setEntries(response.data.data);
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Failed to create yarn in entry"
+        error.response?.data?.message || "Failed to fetch yarn in entries"
       );
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchEntries(categoryFilter, debouncedSearchQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFilter, debouncedSearchQuery]);
+
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center p-4 md:p-8">
-        <div className="max-w-7xl w-full">
+      <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
           <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
             <p className="text-slate-500 dark:text-[#92adc9]">Loading...</p>
           </div>
@@ -271,212 +101,211 @@ export default function YarnInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center p-4 md:p-8">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            Yarn In Entry
-          </h1>
-          <p className="text-slate-500 dark:text-[#92adc9]">
-            Add new yarn in entry
-          </p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Yarn In
+            </h1>
+            <p className="text-slate-500 dark:text-[#92adc9]">
+              View and manage yarn in entries
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/yarn-in/add")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors shadow-md shadow-primary/20"
+          >
+            <span className="material-symbols-outlined">add</span>
+            <span>Add Entry</span>
+          </button>
         </div>
 
-        {/* Form */}
-        <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Entry Date */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Entry Date <span className="text-red-500">*</span>
-                </label>
-                <CustomDatePicker
-                  name="entryDate"
-                  value={formData.entryDate}
-                  onChange={() => {}} // No-op since it's disabled
-                  disabled={true}
-                />
-                <p className="text-xs text-slate-500 dark:text-[#92adc9] mt-1">
-                  Today's date (not editable)
-                </p>
-              </div>
-
-              {/* Purchase Date */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Purchase Date <span className="text-red-500">*</span>
-                </label>
-                <CustomDatePicker
-                  name="purchaseDate"
-                  value={formData.purchaseDate}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setFormData((prev) => ({
-                      ...prev,
-                      [name]: value,
-                    }));
-                  }}
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <CustomSelect
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setFormData((prev) => ({
-                      ...prev,
-                      [name]: value,
-                    }));
-                    if (formErrors[name as keyof typeof formErrors]) {
-                      setFormErrors((prev) => ({
-                        ...prev,
-                        [name]: "",
-                      }));
-                    }
-                  }}
-                  options={categories.map((cat) => ({
+        {/* Filter Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="w-full sm:w-auto sm:max-w-[200px]">
+              <CustomSelect
+                name="categoryFilter"
+                value={categoryFilter}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setCategoryFilter(value);
+                }}
+                options={[
+                  { value: "all", label: "All Categories" },
+                  ...yarnCategories.map((cat) => ({
                     value: cat.id,
                     label: cat.name,
-                  }))}
-                  placeholder="Select Category"
-                  error={formErrors.categoryId}
-                />
-              </div>
-
-              {/* Party */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Party <span className="text-red-500">*</span>
-                </label>
-                <CustomSelect
-                  name="partyId"
-                  value={formData.partyId}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setFormData((prev) => ({
-                      ...prev,
-                      [name]: value,
-                    }));
-                    if (formErrors[name as keyof typeof formErrors]) {
-                      setFormErrors((prev) => ({
-                        ...prev,
-                        [name]: "",
-                      }));
-                    }
-                  }}
-                  options={parties.map((party) => ({
-                    value: party.id,
-                    label: party.name,
-                  }))}
-                  placeholder="Select Party"
-                  error={formErrors.partyId}
-                />
-              </div>
-
-              {/* Lot No */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Lot No <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="lotNo"
-                  value={formData.lotNo}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Enter lot number"
-                />
-                <div className="min-h-[20px]">
-                  {formErrors.lotNo && (
-                    <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                      {formErrors.lotNo}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Number of Boxes */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Number of Boxes <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="noOfBoxes"
-                  value={formData.noOfBoxes}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="0"
-                />
-                <div className="min-h-[20px]">
-                  {formErrors.noOfBoxes && (
-                    <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                      {formErrors.noOfBoxes}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Weight in Kg */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">
-                  Weight in Kg <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="weightInKg"
-                  value={formData.weightInKg}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="0.000"
-                />
-                <div className="min-h-[20px]">
-                  {formErrors.weightInKg && (
-                    <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                      {formErrors.weightInKg}
-                    </p>
-                  )}
-                  {!formErrors.weightInKg && (
-                    <p className="text-xs text-slate-500 dark:text-[#92adc9] mt-1">
-                      Maximum 3 decimal places
-                    </p>
-                  )}
-                </div>
-              </div>
+                  })),
+                ]}
+                placeholder="Filter by category"
+              />
             </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end pt-4">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <span className="material-symbols-outlined animate-spin">
-                      refresh
-                    </span>
-                    <span>Adding...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined">add</span>
-                    <span>Add Entry</span>
-                  </>
-                )}
-              </button>
+          </div>
+          <div className="w-full sm:w-auto sm:max-w-lg">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by lot no, category, or party..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-500 dark:placeholder:text-[#92adc9]"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-[#92adc9] pointer-events-none">
+                <span className="material-symbols-outlined text-xl">search</span>
+              </span>
             </div>
-          </form>
+          </div>
         </div>
+
+        {/* Entries List */}
+        {entries.length === 0 ? (
+          <div className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-8 text-center">
+            <span className="material-symbols-outlined text-6xl text-slate-400 dark:text-[#64748b] mb-4">
+              inventory_2
+            </span>
+            <p className="text-slate-500 dark:text-[#92adc9] text-lg mb-2">
+              No entries found
+            </p>
+            <p className="text-slate-400 dark:text-[#64748b] text-sm">
+              Click "Add Entry" to create your first yarn in entry
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {entries.map((entry) => (
+              <div
+                key={entry.id}
+                className="bg-white dark:bg-[#1a232e] rounded-xl shadow-lg dark:shadow-none border border-slate-200 dark:border-[#324d67] p-6 hover:shadow-xl transition-shadow"
+              >
+                {/* Category */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      category
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Category
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {entry.categoryName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lot No */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      tag
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Lot No
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {entry.lotNo}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Party */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      groups
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Party
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {entry.partyName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Entry Date */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      event
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Entry Date
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {new Date(entry.entryDate).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Purchase Date */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 dark:text-[#64748b] text-lg">
+                      shopping_cart
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                        Purchase Date
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {new Date(entry.purchaseDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Boxes and Weight */}
+                <div className="grid grid-cols-2 gap-4 mb-4 pt-4 border-t border-slate-200 dark:border-[#324d67]">
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                      Boxes
+                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                      {entry.noOfBoxes}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                      Weight (kg)
+                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                      {entry.weightInKg.toFixed(3)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Created By */}
+                <div className="pt-4 border-t border-slate-200 dark:border-[#324d67]">
+                  <p className="text-xs text-slate-500 dark:text-[#92adc9]">
+                    Created by {entry.createdByName || entry.createdBy}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import UserList from "@/components/user/UserList";
 import InviteUserPopover from "@/components/user/InviteUserPopover";
 import EditUserModal from "@/components/user/EditUserModal";
 import DeleteConfirmModal from "@/components/yarn-category/DeleteConfirmModal";
+import CustomSelect from "@/components/common/CustomSelect";
 
 export interface User {
   id: string;
@@ -32,13 +33,36 @@ export default function UserPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
   const inviteButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Debounce search query - wait 3 seconds after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Fetch users
-  const fetchUsers = async () => {
+  const fetchUsers = async (status?: string, roleId?: string, search?: string) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/accounts/user");
+      const params: any = {};
+      if (status && status !== "all") {
+        params.status = status;
+      }
+      if (roleId && roleId !== "all") {
+        params.roleId = roleId;
+      }
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      const response = await axiosInstance.get("/accounts/user", { params });
       setUsers(response.data.data);
     } catch (error: any) {
       toast.error(
@@ -63,9 +87,13 @@ export default function UserPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
     fetchRoles();
   }, []);
+
+  // Fetch users when status filter, role filter, or debounced search query changes
+  useEffect(() => {
+    fetchUsers(statusFilter, roleFilter, debouncedSearchQuery);
+  }, [statusFilter, roleFilter, debouncedSearchQuery]);
 
   // Handle invite user
   const handleInvite = async (data: { email: string; roleId: string }) => {
@@ -159,6 +187,7 @@ export default function UserPage() {
     }
   };
 
+
   // Close popover when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -213,6 +242,60 @@ export default function UserPage() {
                 submitting={submitting}
               />
             )}
+          </div>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="w-full sm:w-auto sm:max-w-[180px]">
+              <CustomSelect
+                name="statusFilter"
+                value={statusFilter}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setStatusFilter(value);
+                }}
+                options={[
+                  { value: "all", label: "All Users" },
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ]}
+                placeholder="Filter by status"
+              />
+            </div>
+            <div className="w-full sm:w-auto sm:max-w-[180px]">
+              <CustomSelect
+                name="roleFilter"
+                value={roleFilter}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setRoleFilter(value);
+                }}
+                options={[
+                  { value: "all", label: "All Roles" },
+                  ...roles.map((role) => ({
+                    value: role.id,
+                    label: role.name,
+                  })),
+                ]}
+                placeholder="Filter by role"
+              />
+            </div>
+          </div>
+          <div className="w-full sm:w-auto sm:max-w-lg">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, email, or role..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-500 dark:placeholder:text-[#92adc9]"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-[#92adc9] pointer-events-none">
+                <span className="material-symbols-outlined text-xl">search</span>
+              </span>
+            </div>
           </div>
         </div>
 

@@ -23,8 +23,34 @@ export async function GET(request: NextRequest) {
     // Ensure models are registered for populate (access to trigger registration)
     void YarnCategory;
     void Party;
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const categoryId = searchParams.get("categoryId");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const search = searchParams.get("search");
+
+    // Build query filter
+    const queryFilter: any = {};
+
+    // Filter by category
+    if (categoryId && categoryId !== "all") {
+      queryFilter.categoryId = new mongoose.Types.ObjectId(categoryId);
+    }
+
+    // Filter by date range
+    if (startDate && endDate) {
+      queryFilter.entryDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+
+    // Build search filter - search will be applied after populate
+    // We'll filter in memory for category name and party name
     
-    const entries = await YarnInEntry.find()
+    const entries = await YarnInEntry.find(queryFilter)
       .populate("categoryId", "name")
       .populate("partyId", "name")
       .sort({ entryDate: -1, createdAt: -1 })
@@ -44,25 +70,43 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Map entries to response format
+    let mappedEntries = entries.map((entry) => ({
+      id: entry._id.toString(),
+      entryDate: entry.entryDate,
+      name: entry.name,
+      categoryId: entry.categoryId._id.toString(),
+      categoryName: (entry.categoryId as any).name,
+      lotNo: entry.lotNo,
+      purchaseDate: entry.purchaseDate,
+      partyId: entry.partyId._id.toString(),
+      partyName: (entry.partyId as any).name,
+      noOfBoxes: entry.noOfBoxes,
+      weightInKg: entry.weightInKg,
+      createdBy: entry.createdBy,
+      createdByName: userMap.get(entry.createdBy) || entry.createdBy,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+    }));
+
+    // Apply search filter if provided
+    if (search && search.trim()) {
+      const searchLower = search.trim().toLowerCase();
+      mappedEntries = mappedEntries.filter((entry) => {
+        const lotNo = (entry.lotNo || "").toLowerCase();
+        const categoryName = (entry.categoryName || "").toLowerCase();
+        const partyName = (entry.partyName || "").toLowerCase();
+        return (
+          lotNo.includes(searchLower) ||
+          categoryName.includes(searchLower) ||
+          partyName.includes(searchLower)
+        );
+      });
+    }
+
     return NextResponse.json(
       {
-        data: entries.map((entry) => ({
-          id: entry._id.toString(),
-          entryDate: entry.entryDate,
-          name: entry.name,
-          categoryId: entry.categoryId._id.toString(),
-          categoryName: (entry.categoryId as any).name,
-          lotNo: entry.lotNo,
-          purchaseDate: entry.purchaseDate,
-          partyId: entry.partyId._id.toString(),
-          partyName: (entry.partyId as any).name,
-          noOfBoxes: entry.noOfBoxes,
-          weightInKg: entry.weightInKg,
-          createdBy: entry.createdBy,
-          createdByName: userMap.get(entry.createdBy) || entry.createdBy,
-          createdAt: entry.createdAt,
-          updatedAt: entry.updatedAt,
-        })),
+        data: mappedEntries,
       },
       { status: 200 }
     );

@@ -65,7 +65,9 @@ export default function MainLayout({
     router.push("/signin");
   };
 
-  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(
+    new Set(["Yarn In", "Yarn Out"])
+  );
 
   const allNavigationItems = [
     {
@@ -75,13 +77,35 @@ export default function MainLayout({
     },
     {
       name: "Yarn In",
-      href: "/yarn-in",
       icon: "input",
+      children: [
+        {
+          name: "Entry",
+          href: "/yarn-in/add",
+          icon: "add",
+        },
+        {
+          name: "List",
+          href: "/yarn-in",
+          icon: "list",
+        },
+      ],
     },
     {
       name: "Yarn Out",
-      href: "/yarn-out",
       icon: "output",
+      children: [
+        {
+          name: "Entry",
+          href: "/yarn-out/add",
+          icon: "add",
+        },
+        {
+          name: "List",
+          href: "/yarn-out",
+          icon: "list",
+        },
+      ],
     },
     {
       name: "Master",
@@ -193,7 +217,7 @@ export default function MainLayout({
             <ul className="space-y-1">
               {navigationItems.map((item) => {
                 const hasChildren = "children" in item && item.children;
-                const isExpanded = expandedMenu === item.name;
+                const isExpanded = expandedMenus.has(item.name);
 
                 return (
                   <li key={item.name}>
@@ -201,7 +225,15 @@ export default function MainLayout({
                       <>
                         <button
                           onClick={() => {
-                            setExpandedMenu(isExpanded ? null : item.name);
+                            setExpandedMenus((prev) => {
+                              const newSet = new Set(prev);
+                              if (isExpanded) {
+                                newSet.delete(item.name);
+                              } else {
+                                newSet.add(item.name);
+                              }
+                              return newSet;
+                            });
                           }}
                           className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-slate-700 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#101922] transition-colors"
                         >

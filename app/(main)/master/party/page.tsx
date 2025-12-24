@@ -15,12 +15,27 @@ export default function PartyPage() {
   const [editingParty, setEditingParty] = useState<Party | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+
+  // Debounce search query - wait 3 seconds after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch parties
-  const fetchParties = async () => {
+  const fetchParties = async (search?: string) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("/party");
+      const params: any = {};
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      const response = await axiosInstance.get("/party", { params });
       setParties(response.data.data);
     } catch (error: any) {
       toast.error(
@@ -32,8 +47,8 @@ export default function PartyPage() {
   };
 
   useEffect(() => {
-    fetchParties();
-  }, []);
+    fetchParties(debouncedSearchQuery);
+  }, [debouncedSearchQuery]);
 
   // Handle form submit
   const handleSubmit = async (data: {
@@ -57,7 +72,7 @@ export default function PartyPage() {
       // Reset and close
       setShowForm(false);
       setEditingParty(null);
-      fetchParties();
+      fetchParties(debouncedSearchQuery);
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to save party"
@@ -80,7 +95,7 @@ export default function PartyPage() {
       await axiosInstance.delete(`/party/${id}`);
       toast.success("Party deleted successfully");
       setDeleteConfirm(null);
-      fetchParties();
+      fetchParties(debouncedSearchQuery);
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to delete party"
@@ -120,6 +135,24 @@ export default function PartyPage() {
             <span className="material-symbols-outlined">add</span>
             <span>Add Party</span>
           </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6 flex justify-end">
+          <div className="w-full sm:w-auto sm:max-w-lg">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, email, or mobile..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-[#324d67] bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-500 dark:placeholder:text-[#92adc9]"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-[#92adc9] pointer-events-none">
+                <span className="material-symbols-outlined text-xl">search</span>
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Form Modal */}

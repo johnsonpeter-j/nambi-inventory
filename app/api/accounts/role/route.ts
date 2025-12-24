@@ -16,7 +16,21 @@ export async function GET(request: NextRequest) {
     }
 
     await connectDB();
-    const roles = await Role.find()
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+
+    // Build query filter
+    const queryFilter: any = {};
+
+    // Build search filter
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      queryFilter.name = searchRegex;
+    }
+
+    const roles = await Role.find(queryFilter)
       .sort({ createdAt: -1 })
       .lean();
 
@@ -125,4 +139,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
